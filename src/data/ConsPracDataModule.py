@@ -9,11 +9,16 @@ from src.data.utils import get_split_idxs
 
 class ConsPracDataModule(pl.LightningDataModule):
     def __init__(
-        self, data_dir: str = Config.DATA_DIR, batch_size: int = Config.BATCH_SIZE
+        self,
+        data_dir: str = Config.DATA_DIR,
+        batch_size: int = Config.BATCH_SIZE,
+        augment_images: bool = False,
     ):
         super().__init__()
         self.data_dir = data_dir
         self.batch_size = batch_size
+
+        self.augment_images = augment_images
 
     def prepare_data(self):
         pass
@@ -31,7 +36,7 @@ class ConsPracDataModule(pl.LightningDataModule):
             train_idxs, validation_idxs = get_split_idxs(
                 df=fit,
                 train_frac=0.8,
-                random_state=23,
+                random_state=Config.RANDOM_STATE,
             )
 
             x_train = x_fit.loc[train_idxs]
@@ -39,8 +44,8 @@ class ConsPracDataModule(pl.LightningDataModule):
             x_val = x_fit.loc[validation_idxs]
             y_val = y_fit.loc[validation_idxs]
 
-            self.consprac_train = ConsPrac(x_train, y_train)
-            self.consprac_val = ConsPrac(x_val, y_val)
+            self.consprac_train = ConsPrac(x_train, y_train, self.augment_images)
+            self.consprac_val = ConsPrac(x_val, y_val, self.augment_images)
 
         # Assign test dataset for use in dataloader(s)
         if stage == "test" or stage is None:
@@ -48,7 +53,6 @@ class ConsPracDataModule(pl.LightningDataModule):
                 f"{self.data_dir}/{Config.DATA_TEST}", index_col=Config.INDEX_COLUMN
             )
             x_test = test.filepath.to_frame()
-
             self.consprac_test = ConsPrac(x_test, None)
 
     def train_dataloader(self):
