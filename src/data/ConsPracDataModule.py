@@ -12,9 +12,6 @@ class ConsPracDataModule(pl.LightningDataModule):
         self.data_dir = data_dir
         self.batch_size = batch_size
 
-        # self.dims = (1, 28, 28)
-        # self.num_classes = 10
-
     def prepare_data(self):
         pass
 
