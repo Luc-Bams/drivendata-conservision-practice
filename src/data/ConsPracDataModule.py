@@ -1,7 +1,9 @@
 import pandas as pd
 import pytorch_lightning as pl
+from sklearn.model_selection import StratifiedGroupKFold
 from torch.utils.data import DataLoader
 
+from src.config import Config
 from src.data.ConsPrac import ConsPrac
 from src.data.utils import get_split_idxs
 
@@ -36,16 +38,26 @@ class ConsPracDataModule(pl.LightningDataModule):
             ]
             y_fit = fit[feature_columns]
 
-            train_idxs, validation_idxs = get_split_idxs(
-                df=fit,
-                train_frac=0.8,
-                random_state=23,
+            sgkf = StratifiedGroupKFold(
+                n_splits=2, shuffle=True, random_state=Config.RANDOM_STATE
             )
+            for i, (idxs_1, idxs_2) in enumerate(
+                sgkf.split(fit, y_fit.idxmax(axis=1), fit["site"])
+            ):
+                train_idxs = idxs_1 if len(idxs_1) > len(idxs_2) else idxs_2
+                validation_idxs = idxs_2 if len(idxs_1) > len(idxs_2) else idxs_1
+                print(
+                    f"Train: {len(train_idxs)} ({len(train_idxs)/len(fit.index):.2f}), Validation: {len(validation_idxs)} ({len(validation_idxs)/len(fit.index):.2f})"
+                )
+                print(
+                    f"# Overlapping sites: {len(set(fit.iloc[train_idxs].site) & set(fit.iloc[validation_idxs].site))}"
+                )
+                break
 
-            x_train = x_fit.loc[train_idxs]
-            y_train = y_fit.loc[train_idxs]
-            x_val = x_fit.loc[validation_idxs]
-            y_val = y_fit.loc[validation_idxs]
+            x_train = x_fit.iloc[train_idxs]
+            y_train = y_fit.iloc[train_idxs]
+            x_val = x_fit.iloc[validation_idxs]
+            y_val = y_fit.iloc[validation_idxs]
 
             self.consprac_train = ConsPrac(x_train, y_train)
             self.consprac_val = ConsPrac(x_val, y_val)
