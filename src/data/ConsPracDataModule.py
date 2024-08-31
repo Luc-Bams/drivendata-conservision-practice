@@ -2,12 +2,15 @@ import pandas as pd
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader
 
+from src.config import Config
 from src.data.ConsPrac import ConsPrac
 from src.data.utils import get_split_idxs
 
 
 class ConsPracDataModule(pl.LightningDataModule):
-    def __init__(self, data_dir: str = "data", batch_size: int = 32):
+    def __init__(
+        self, data_dir: str = Config.DATA_DIR, batch_size: int = Config.BATCH_SIZE
+    ):
         super().__init__()
         self.data_dir = data_dir
         self.batch_size = batch_size
@@ -18,20 +21,12 @@ class ConsPracDataModule(pl.LightningDataModule):
     def setup(self, stage=None):
         # Assign train/val datasets for use in dataloaders
         if stage == "fit" or stage is None:
-            fit = pd.read_csv(f"{self.data_dir}/fit.csv", index_col="id")
+            fit = pd.read_csv(
+                f"{self.data_dir}/{Config.DATA_FIT}", index_col=Config.INDEX_COLUMN
+            )
             x_fit = fit.filepath.to_frame()
 
-            feature_columns = [
-                "antelope_duiker",
-                "bird",
-                "blank",
-                "civet_genet",
-                "hog",
-                "leopard",
-                "monkey_prosimian",
-                "rodent",
-            ]
-            y_fit = fit[feature_columns]
+            y_fit = fit[Config.FEATURE_COLUMNS]
 
             train_idxs, validation_idxs = get_split_idxs(
                 df=fit,
@@ -49,7 +44,9 @@ class ConsPracDataModule(pl.LightningDataModule):
 
         # Assign test dataset for use in dataloader(s)
         if stage == "test" or stage is None:
-            test = pd.read_csv(f"{self.data_dir}/test_features.csv", index_col="id")
+            test = pd.read_csv(
+                f"{self.data_dir}/{Config.DATA_TEST}", index_col=Config.INDEX_COLUMN
+            )
             x_test = test.filepath.to_frame()
 
             self.consprac_test = ConsPrac(x_test, None)
