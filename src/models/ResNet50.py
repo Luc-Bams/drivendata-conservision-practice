@@ -6,7 +6,7 @@ from torch import nn
 from torchmetrics.functional import accuracy
 
 
-class LitConsPrac(pl.LightningModule):
+class ResNet50(pl.LightningModule):
     def __init__(self, num_classes: int = 8, lr: float = 0.001):
         super().__init__()
         self.save_hyperparameters()
