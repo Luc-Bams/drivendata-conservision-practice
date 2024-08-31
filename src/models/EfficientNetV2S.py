@@ -6,7 +6,7 @@ from torch import nn
 from torchmetrics.functional import accuracy
 
 
-class LitConsPrac(pl.LightningModule):
+class EfficientNetV2S(pl.LightningModule):
     def __init__(self, num_classes: int = 8, lr: float = 0.001):
         super().__init__()
         self.save_hyperparameters()
@@ -15,13 +15,16 @@ class LitConsPrac(pl.LightningModule):
         # self.train_accuracy = Accuracy(task="multiclass", num_classes=num_classes)
         # self.val_accuracy = Accuracy(task="multiclass", num_classes=num_classes)
 
-        # init a pretrained resnet
-        backbone = models.resnet50(weights="DEFAULT")
-        num_filters = backbone.fc.in_features
-        layers = list(backbone.children())[:-1]
-        self.feature_extractor = nn.Sequential(*layers)
-        self.feature_extractor.eval()
-
+        # Initialize a pretrained EfficientNetV2_S model
+        backbone = models.efficientnet_v2_s(weights="DEFAULT")
+        # Extract number of filters from the last layer before the classifier
+        num_filters = backbone.classifier[
+            1
+        ].in_features  # Correct way to access the input features of the classifier layer
+        # Use all layers except the last classification layer for feature extraction
+        self.feature_extractor = nn.Sequential(*list(backbone.children())[:-1])
+        self.feature_extractor.eval()  # Freeze the backbone if desired
+        # Define the classifier for the new task
         self.num_classes = num_classes
         self.classifier = nn.Linear(num_filters, self.num_classes)
 
